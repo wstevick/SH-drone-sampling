@@ -1,5 +1,6 @@
 # SH-drone-sampling
-The server accepts the following commands:
+The arduino runs a wifi access point (SSID “Sampling Wifi”, password “very secret”), and a server on that access point at 192.168.4.1:123, that can be accessed by running `netcat 192.168.4.1 123` on a linux terminal. The server accepts the following commands
+
  - Tfilename to start taking data to the file. For instance, Tdata-03-07-25 to start taking data to a file called save-03-07-25-4:37pm
  - S to stop taking data
  - F to format the flash memory and delete everything
