@@ -158,22 +158,22 @@ void loop() {
   } else if (!takingData && hasClient) { // once we get a client, blink on and off twice/second
     setState(millis() % 1000 < 500);
   } else if (takingData && hasClient) { // if we start taking data, hold on and blink off once per second
-    setState(millis() % 1000 > 100);
+    setState(millis() % 1000 > 200);
   } else if (takingData && !hasClient) setState(true); // if they disconnect, hold on
 }
 
-// send the amount of data saved, and the board status
+// send the amount of data saved, the files, and the board status
 void sendStatusUpdate() {
-  // find the total size of the data files
+  // print the save of every file
   Dir dataDir = LittleFS.openDir(DATA_DIR);
-  size_t totalSize = 0;
   while (dataDir.next()) {
     size_t size = dataDir.fileSize();
     // silently ignore invalid files
     if (size % sizeof(Observation) == 0) {
-      totalSize += size;
+      client.println(dataDir.fileName());
+      client.println(size / sizeof(Observation) * SECONDS_PER_OBSERVATION);
     }
   }
 
-  client.printf("%s%d\n", takingData ? "T" : "N", totalSize / sizeof(Observation) * SECONDS_PER_OBSERVATION);
+  client.printf("/%s\n", takingData ? "T" : "N");
 }
