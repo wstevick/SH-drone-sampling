@@ -12,7 +12,7 @@ void setState(bool state) {
 }
 
 // DHT things
-#define DHTPIN 2  // D4
+#define DHTPIN 14 // D5
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
