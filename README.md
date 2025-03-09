@@ -1,7 +1,7 @@
 # SH-drone-sampling
 The arduino runs a wifi access point (SSID “Sampling Wifi”, password “very secret”), and a server on that access point at 192.168.4.1:123, that can be accessed by running `netcat 192.168.4.1 123` on a linux terminal. The server accepts the following commands
 
- - Tfilename to start taking data to the file. For instance, Tdata-03-07-25 to start taking data to a file called save-03-07-25-4:37pm
+ - Tfilename to start taking data to the file. For instance, Tdata-03-07-25 to start taking data to a file called data-03-07-25
  - S to stop taking data
  - F to format the flash memory and delete everything
  - P to print the data saved in every file. Format is
@@ -24,9 +24,11 @@ The arduino runs a wifi access point (SSID “Sampling Wifi”, password “very
 
 	/DONE!
 
-	Data is csv, format is milliseconds since `recording started,temperature,humidity`
+	Data is csv, format is `milliseconds since recording started,temperature,humidity,gpshour,gpsminute,gpssecond,latitude (DDMM.MMMM)X,longitude (DDDMM.MMMM)X,altitude,fixquality,nsatellites`
  - U says to print an update on the data saved. Format is
 
+	`Latest data point (same format as CSV in P)`
+	
 	`Name of file 1`
 
 	`Seconds of data stored in file 1`
