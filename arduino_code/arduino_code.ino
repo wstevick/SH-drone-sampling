@@ -135,7 +135,7 @@ void loop() {
     } else if (order == 'P') {  // Print data
       Dir dataDir = LittleFS.openDir(DATA_DIR);
       while (dataDir.next()) {
-        if (dataDir.fileSize() % sizeof(Observation) == 0) {        
+        if (dataDir.fileSize() % sizeof(Observation) == 0) {
           client.println(dataDir.fileName());
 
           struct Observation loadObs;
@@ -159,7 +159,20 @@ void loop() {
   // update GPS information
   while (GPS.available()) {
     GPS.read();
-    if (GPS.newNMEAreceived()) GPS.parse(GPS.lastNMEA());
+    if (GPS.newNMEAreceived() && GPS.parse(GPS.lastNMEA())) {
+      latestObs.hour = GPS.hour;
+      latestObs.minute = GPS.minute;
+      latestObs.seconds = GPS.seconds;
+
+      latestObs.latitude = GPS.latitude;
+      latestObs.lat = GPS.lat;
+      latestObs.longitude = GPS.longitude;
+      latestObs.lon = GPS.lon;
+      latestObs.altitude = GPS.altitude;
+
+      latestObs.fixquality = GPS.fixquality;
+      latestObs.nsatellites = GPS.satellites;
+    }
   }
 
   // if we're taking data, and the time has come for the next observation
@@ -167,11 +180,9 @@ void loop() {
   if (now > nextObservationTime) {
     nextObservationTime += SECONDS_PER_OBSERVATION * 1000;
 
-    latestObs = { now - startedTakingData,
-                  dht.readTemperature(), dht.readHumidity(),
-                  GPS.hour, GPS.minute, GPS.seconds,
-                  GPS.latitude, GPS.lat, GPS.longitude, GPS.lon, GPS.altitude,
-                  GPS.fixquality, GPS.satellites };
+    latestObs.sinceStart = now - startedTakingData;
+    latestObs.temp = dht.readTemperature();
+    latestObs.humidity = dht.readHumidity();
 
     if (isnan(latestObs.temp) || isnan(latestObs.humidity)) {
       // give an annoyed blink if we can't read DHT
