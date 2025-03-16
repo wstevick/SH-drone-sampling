@@ -27,4 +27,4 @@ if isna.sum() != 0:
     first_nan_row = data[isna].iloc[0]
     print('first nan row was at', to_hms(round(first_nan_row['boardtime'] / 1000)))
     last_nonnan_row = data[~isna].iloc[-1]
-    print('last non-nan row wast at', to_hms(round(last_nonnan_row['boardtime'] / 1000)))
+    print('last non-nan row was at', to_hms(round(last_nonnan_row['boardtime'] / 1000)))
