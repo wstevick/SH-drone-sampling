@@ -73,6 +73,7 @@ void makeError(String message) {
 void setup() {
   // configure the pin for the LED we use to communicate to the user
   pinMode(LEDPIN, OUTPUT);
+  lastState = true;
   setState(false);
 
   // try to start the WiFi access point
@@ -123,6 +124,7 @@ void loop() {
       } else {
         startedTakingData = millis();
         String fname = client.readStringUntil('\n');
+        fname.trim();
         // do nothing if they don't send a file name
         if (fname.length()) {
           savefile = LittleFS.open(DATA_DIR + fname, "w");
@@ -141,14 +143,14 @@ void loop() {
           struct Observation loadObs;
           File readfile = dataDir.openFile("r");
           while (readfile.available() >= sizeof(loadObs)) {
-            readfile.readBytes((char*)&loadObs, sizeof(loadObs));
+            readfile.readBytes((char*) &loadObs, sizeof(loadObs));
             printObservation(loadObs);
           }
         }
 
         client.println();
       }
-      client.println("/DONE!");
+      client.println();
     } else if (order == 'F' && !takingData) {  // Format flash memory
       LittleFS.format();
     } else if (order == 'U') {  // send status Update
@@ -190,7 +192,8 @@ void loop() {
         setState(!lastState);
         delay(50);
       }
-    } else if (takingData) {
+    }
+    if (takingData) {
       savefile.write((char*)&latestObs, sizeof(latestObs));
       savefile.flush();
     }
@@ -208,7 +211,7 @@ void loop() {
 
 // send an Observation to the client, as CSV
 void printObservation(struct Observation obs) {
-  client.printf("%d,%f,%f,%d,%d,%d,%f%c,%f%c,%f,%d,%d\n",
+  client.printf("%d,%f,%f,%d:%d:%d (GMT),%f%c,%f%c,%f,%d,%d\n",
                 obs.sinceStart,
                 obs.temp, obs.humidity,
                 obs.hour, obs.minute, obs.seconds,
@@ -221,6 +224,7 @@ void sendStatusUpdate() {
   // print latest observation
   printObservation(latestObs);
   // print the time saved in each file
+  unsigned corruptedFiles = 0;
   Dir dataDir = LittleFS.openDir(DATA_DIR);
   while (dataDir.next()) {
     size_t size = dataDir.fileSize();
@@ -228,8 +232,10 @@ void sendStatusUpdate() {
     if (size % sizeof(Observation) == 0) {
       client.println(dataDir.fileName());
       client.println(size / sizeof(Observation) * SECONDS_PER_OBSERVATION);
+    } else {
+      corruptedFiles++;
     }
   }
 
-  client.printf("/%s\n", takingData ? "T" : "N");
+  client.printf("/%s%d\n", takingData ? "T" : "N", corruptedFiles);
 }
