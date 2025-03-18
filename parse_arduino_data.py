@@ -16,7 +16,6 @@ def parse_adafruit_latlon(coord):
 
 
 def parse_arduino_dataline(line):
-    print("parse:", line)
     [
         boardtime,
         temp,
@@ -57,7 +56,6 @@ def parseupdate(getline):
         if filename[0] == "/":
             taking_data = filename[1] == "T"
             corrupted_files = int(filename[2:])
-            print(corrupted_files)
             break
         savedfiles[filename] = int(getline())
     return taking_data, corrupted_files, status, savedfiles

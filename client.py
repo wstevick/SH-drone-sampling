@@ -42,7 +42,7 @@ class ControlGUI:
             ),
         }
         for idx, btn in enumerate(self.buttons.values()):
-            btn.config(font=font, state=tk.NORMAL)
+            btn.config(font=font, state=tk.DISABLED)
             btn.grid(row=0, column=idx, padx=5, pady=5)
 
         # bottom panel, with the status display
@@ -50,7 +50,6 @@ class ControlGUI:
         self.display.pack(padx=10, pady=10, fill=tk.BOTH)
 
         self.socket = None
-        self.socket_lock = threading.RLock()
         self.connect_to_arduino()
 
         self.update_status_loop()
@@ -76,132 +75,122 @@ class ControlGUI:
         self.update_status()
 
     def update_status(self):
-        with self.socket_lock:
-            try:
-                # ask for an update
-                self.send("U")
-                # process the update using seperate module
-                (
-                    self.taking_data,
-                    corrupted_files,
-                    [
-                        _,
-                        temp,
-                        humidity,
-                        timestamp,
-                        lat,
-                        lon,
-                        altitude,
-                        fixtype,
-                        satellites,
-                    ],
-                    savedfiles,
-                ) = parse_arduino_data.parseupdate(self.getline)
-            except NoConnection:
-                return
+        try:
+            # ask for an update
+            self.send("U")
+            # process the update using seperate module
+            (
+                self.taking_data,
+                corrupted_files,
+                [
+                    _,
+                    temp,
+                    humidity,
+                    timestamp,
+                    lat,
+                    lon,
+                    altitude,
+                    fixtype,
+                    satellites,
+                ],
+                savedfiles,
+            ) = parse_arduino_data.parseupdate(self.getline)
+        except NoConnection:
+            return
 
-            # update the buttons statuses
-            for name, btn in self.buttons.items():
-                if name == "toggle":
-                    btn.config(
-                        state=tk.NORMAL,
-                        text=(
-                            "Stop Taking Data"
-                            if self.taking_data
-                            else "Take Data"
-                        ),
-                    )
-                elif name == "format":
-                    btn.config(
-                        state=tk.DISABLED if self.taking_data else tk.NORMAL
-                    )
-                elif name == "save":
-                    btn.config(state=tk.NORMAL)
+        # update the buttons statuses
+        for name, btn in self.buttons.items():
+            if name == "toggle":
+                btn.config(
+                    state=tk.NORMAL,
+                    text=(
+                        "Stop Taking Data" if self.taking_data else "Take Data"
+                    ),
+                )
+            elif name == "format":
+                btn.config(
+                    state=tk.DISABLED if self.taking_data else tk.NORMAL
+                )
+            elif name == "save":
+                btn.config(state=tk.NORMAL)
 
-            # set the display
-            # example:
-            #
-            # Taking Data
-            # 8:06:55 EST
-            # 23C at 28% humidity
-            # Location 130,800, altitude 138.3
-            # Fix type: GPS (8 satellites)
-            #
-            # Saved files:
-            # save-2025-03-09 - 3 minutes, 4 seconds of data
-            # testfile - 1 minute, 38 seconds of data
-            # 1 file(s) corrupted
-            lines = [
-                "Taking Data" if self.taking_data else "Not Taking Data",
-                "",
-                timestamp,
-                f"{temp}C at {humidity}% humidity",
-                f"Location {lat},{lon}, altitude {altitude}",
-                f"Fix type: {fixtype} ({satellites} satellites)",
-                "",
-                "Saved files:",
-            ]
-            print(savedfiles)
-            lines += [
-                f"{filename} - {savedtime}"
-                for filename, savedtime in savedfiles.items()
-            ]
-            if corrupted_files:
-                lines.append(f"{corrupted_files} file(s) corrupted")
-            self.display.config(text="\n".join(lines))
+        # set the display
+        # example:
+        #
+        # Taking Data
+        # 8:06:55 EST
+        # 23C at 28% humidity
+        # Location 130,800, altitude 138.3
+        # Fix type: GPS (8 satellites)
+        #
+        # Saved files:
+        # save-2025-03-09 - 3 minutes, 4 seconds of data
+        # testfile - 1 minute, 38 seconds of data
+        # 1 file(s) corrupted
+        lines = [
+            "Taking Data" if self.taking_data else "Not Taking Data",
+            "",
+            timestamp,
+            f"{temp}C at {humidity}% humidity",
+            f"Location {lat},{lon}, altitude {altitude}",
+            f"Fix type: {fixtype} ({satellites} satellites)",
+            "",
+            "Saved files:",
+        ]
+        lines += [
+            f"{filename} - {savedtime}"
+            for filename, savedtime in savedfiles.items()
+        ]
+        if corrupted_files:
+            lines.append(f"{corrupted_files} file(s) corrupted")
+        self.display.config(text="\n".join(lines))
 
     def getline(self):
-        with self.socket_lock:
-            """Get one line from the arduino"""
-            if self.socket is None:
-                raise NoConnection
+        """Get one line from the arduino"""
+        if self.socket is None:
+            raise NoConnection
 
-            try:
-                line = bytearray()
-                print("recv:", end=" ")
-                while True:
-                    char = self.socket.recv(1)
-                    if char == b"":
-                        raise TimeoutError
-                    if char == b"\n":
-                        break
-                    if char == b"\n":
-                        continue
-                    line.extend(char)
-                    print(char.decode(), end="")
-                print()
-                return line.decode()
-            except TimeoutError:
-                self.handle_disconnect()
-                raise NoConnection
+        try:
+            line = bytearray()
+            while True:
+                char = self.socket.recv(1)
+                if char == b"":
+                    raise TimeoutError
+                if char == b"\n":
+                    break
+                if char == b"\r":
+                    continue
+                line.extend(char)
+            return line.decode()
+        except TimeoutError:
+            self.handle_disconnect()
+            raise NoConnection
 
     def send(self, message):
         """Send a message to the arduino"""
-        with self.socket_lock:
-            if self.socket is None:
-                raise NoConnection
+        if self.socket is None:
+            raise NoConnection
 
-            message_bytes = message.encode()
-            try:
-                sent = self.socket.send(message_bytes)
-            except TimeoutError:
-                sent = -1
+        message_bytes = message.encode()
+        try:
+            sent = self.socket.send(message_bytes)
+        except TimeoutError:
+            sent = -1
 
-            if sent != len(message_bytes):
-                self.handle_disconnect()
-                raise NoConnection
+        if sent != len(message_bytes):
+            self.handle_disconnect()
+            raise NoConnection
 
     def handle_disconnect(self):
         """Disable all buttons, clear the display, and try to reconnect to the arduino"""
-        with self.socket_lock:
-            for btn in self.buttons.values():
-                btn.config(state=tk.DISABLED)
-            self.display.config(text="")
+        for btn in self.buttons.values():
+            btn.config(state=tk.DISABLED)
+        self.display.config(text="")
 
-            self.socket.close()
-            self.socket = None
+        self.socket.close()
+        self.socket = None
 
-            self.connect_to_arduino()
+        self.connect_to_arduino()
 
     def toggle(self):
         try:
@@ -213,7 +202,7 @@ class ControlGUI:
                     "File Name", "Enter name of save file"
                 ).strip()
                 if fname:
-                    self.send(f"T{fname}")
+                    self.send(f"T{fname}\n")
                     self.buttons["toggle"].config(text="Stop Taking Data")
         except NoConnection:
             pass
@@ -226,9 +215,10 @@ class ControlGUI:
                 pass
 
     def download(self):
-        with self.socket_lock:
+        if not self.taking_data:
             save_dir = askdirectory()
             if save_dir:
+                self.send("P")
                 parse_arduino_data.save_data_to(save_dir, self.getline)
 
 

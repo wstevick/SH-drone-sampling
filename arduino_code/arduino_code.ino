@@ -143,7 +143,7 @@ void loop() {
           struct Observation loadObs;
           File readfile = dataDir.openFile("r");
           while (readfile.available() >= sizeof(loadObs)) {
-            readfile.readBytes((char*) &loadObs, sizeof(loadObs));
+            readfile.readBytes((char*)&loadObs, sizeof(loadObs));
             printObservation(loadObs);
           }
         }
@@ -180,7 +180,8 @@ void loop() {
   // if we're taking data, and the time has come for the next observation
   unsigned long now = millis();
   if (now > nextObservationTime) {
-    nextObservationTime += SECONDS_PER_OBSERVATION * 1000;
+    while (now > nextObservationTime)
+      nextObservationTime += SECONDS_PER_OBSERVATION * 1000;
 
     latestObs.sinceStart = now - startedTakingData;
     latestObs.temp = dht.readTemperature();
