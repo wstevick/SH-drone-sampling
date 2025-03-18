@@ -4,11 +4,11 @@
 #include <Adafruit_GPS.h>
 
 // setup for the LED
-#define LEDPIN 16  // builtin led
+#define LEDPIN 16  // builtin led/D0
 bool lastState;
 void setState(bool state) {
   if (state != lastState)
-    digitalWrite(LEDPIN, state ? LOW : HIGH);
+    digitalWrite(LEDPIN, state ? HIGH : LOW);
   lastState = state;
 }
 
