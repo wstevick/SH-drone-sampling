@@ -69,7 +69,9 @@ def save_data_to(where, getline):
             break
         saved_files += 1
         with open(os.path.join(where, fname), "w", newline="") as f:
-            f.write("boardtime,temp,humidity,timestamp,lat,lon,altitude,fixtype,satellites\n")
+            f.write(
+                "boardtime,temp,humidity,timestamp,lat,lon,altitude,fixtype,satellites\n"
+            )
             writer = csv.writer(f)
             while True:
                 line = getline()

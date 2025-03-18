@@ -61,8 +61,13 @@ class ControlGUI:
 
     def _connect_to_arduiono(self):
         """Form a socket connection with the arduino"""
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((HOST, PORT))
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((HOST, PORT))
+                break
+            except (TimeoutError, OSError):
+                continue
         s.settimeout(TIMEOUT)
         # all the work done on a seperate variable that's then moved to self.socket
         # that way, the main thread won't try to do anything to it while we're still getting it ready
@@ -136,13 +141,13 @@ class ControlGUI:
             f"{temp}C at {humidity}% humidity",
             f"Location {lat},{lon}, altitude {altitude}",
             f"Fix type: {fixtype} ({satellites} satellites)",
-            "",
-            "Saved files:",
         ]
-        lines += [
-            f"{filename} - {savedtime}"
-            for filename, savedtime in savedfiles.items()
-        ]
+        if savedfiles:
+            lines.extend(["", "Saved files:"])
+            for filename, savedtime in savedfiles.items():
+                minutes, seconds = divmod(savedtime, 60)
+                hours, minutes = divmod(minutes, 60)
+                lines.append(f"{filename} - {hours}:{minutes}:{seconds}")
         if corrupted_files:
             lines.append(f"{corrupted_files} file(s) corrupted")
         self.display.config(text="\n".join(lines))
@@ -220,7 +225,9 @@ class ControlGUI:
         save_dir = askdirectory()
         if save_dir:
             self.send("P")
-            saved_files = parse_arduino_data.save_data_to(save_dir, self.getline)
+            saved_files = parse_arduino_data.save_data_to(
+                save_dir, self.getline
+            )
             showinfo(message=f"{saved_files} downloaded")
 
 
