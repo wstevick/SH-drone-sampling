@@ -62,14 +62,18 @@ def parseupdate(getline):
 
 
 def save_data_to(where, getline):
+    saved_files = 0
     while True:
         fname = getline()
         if not fname:
-            return
+            break
+        saved_files += 1
         with open(os.path.join(where, fname), "w", newline="") as f:
+            f.write("boardtime,temp,humidity,timestamp,lat,lon,altitude,fixtype,satellites\n")
             writer = csv.writer(f)
             while True:
                 line = getline()
                 if not line:
                     break
                 writer.writerow(parse_arduino_dataline(line))
+    return saved_files

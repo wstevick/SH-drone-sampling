@@ -1,11 +1,12 @@
 import tkinter as tk
+import atexit
 import threading
 import socket
 import tkinter.font as tkfont
 from tkinter.simpledialog import askstring
 from tkinter.filedialog import askdirectory
 import os
-from tkinter.messagebox import askyesno
+from tkinter.messagebox import askyesno, showinfo
 
 import parse_arduino_data
 
@@ -66,6 +67,7 @@ class ControlGUI:
         # all the work done on a seperate variable that's then moved to self.socket
         # that way, the main thread won't try to do anything to it while we're still getting it ready
         self.socket = s
+        atexit.register(s.close)
         self.update_status()
 
     def update_status_loop(self):
@@ -215,11 +217,11 @@ class ControlGUI:
                 pass
 
     def download(self):
-        if not self.taking_data:
-            save_dir = askdirectory()
-            if save_dir:
-                self.send("P")
-                parse_arduino_data.save_data_to(save_dir, self.getline)
+        save_dir = askdirectory()
+        if save_dir:
+            self.send("P")
+            saved_files = parse_arduino_data.save_data_to(save_dir, self.getline)
+            showinfo(message=f"{saved_files} downloaded")
 
 
 def main():
