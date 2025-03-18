@@ -66,7 +66,7 @@ class ControlGUI:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((HOST, PORT))
                 break
-            except (TimeoutError, OSError):
+            except OSError:
                 continue
         s.settimeout(TIMEOUT)
         # all the work done on a seperate variable that's then moved to self.socket
@@ -157,21 +157,30 @@ class ControlGUI:
         if self.socket is None:
             raise NoConnection
 
+        line = bytearray()
+
         try:
-            line = bytearray()
-            while True:
-                char = self.socket.recv(1)
-                if char == b"":
-                    raise TimeoutError
-                if char == b"\n":
-                    break
-                if char == b"\r":
-                    continue
-                line.extend(char)
-            return line.decode()
-        except TimeoutError:
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "log"
+                ),
+                "ab",
+            ) as f:
+                while True:
+                    char = self.socket.recv(1)
+                    f.write(char)
+                    if char == b"":
+                        raise TimeoutError
+                    if char == b"\n":
+                        break
+                    if char == b"\r":
+                        continue
+                    line.extend(char)
+        except OSError:
             self.handle_disconnect()
             raise NoConnection
+
+        return line.decode()
 
     def send(self, message):
         """Send a message to the arduino"""
@@ -205,11 +214,9 @@ class ControlGUI:
                 self.send("S")
                 self.buttons["toggle"].config(text="Take Data")
             else:
-                fname = askstring(
-                    "File Name", "Enter name of save file"
-                ).strip()
+                fname = askstring("File Name", "Enter name of save file")
                 if fname:
-                    self.send(f"T{fname}\n")
+                    self.send(f"T{fname.strip()}\n")
                     self.buttons["toggle"].config(text="Stop Taking Data")
         except NoConnection:
             pass
