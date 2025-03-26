@@ -16,17 +16,21 @@ def parse_adafruit_latlon(coord):
 
 
 def parse_arduino_dataline(line):
-    [
-        boardtime,
-        temp,
-        humidity,
-        timestamp,
-        lat,
-        lon,
-        altitude,
-        fixtype,
-        satellites,
-    ] = line.split(",")
+    try:
+        [
+            boardtime,
+            temp,
+            humidity,
+            timestamp,
+            lat,
+            lon,
+            altitude,
+            fixtype,
+            satellites,
+        ] = line.split(",")
+    except:
+        print('error parsing', line)
+        raise
     boardtime = int(boardtime)
     temp = float(temp)
     humidity = float(humidity)

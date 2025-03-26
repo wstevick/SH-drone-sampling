@@ -23,7 +23,7 @@ def logme(func):
     @functools.wraps(func)
     def wrapped(self, *args, **kwargs):
         global indent
-        print("    " * indent, func.__name__, self.socket)
+        print("    " * indent, func.__name__, 'has socket' if self.socket else 'None')
         indent += 1
         try:
             res = func(self, *args, **kwargs)

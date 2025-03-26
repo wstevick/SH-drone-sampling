@@ -18,7 +18,7 @@ void setState(bool state) {
 DHT dht(DHTPIN, DHTTYPE);
 
 // measurement things
-bool takingData = false;
+bool takingData;
 unsigned long startedTakingData;
 unsigned long nextObservationTime;
 #define SECONDS_PER_OBSERVATION 3
@@ -33,7 +33,7 @@ Adafruit_GPS GPS(&Serial);
 
 // save file things
 File savefile;
-#define DATA_DIR "/"
+#define DATA_DIR "/data/"
 struct Observation {
   unsigned long sinceStart;  // time since we started taking data, milliseconds
 
@@ -84,6 +84,16 @@ void setup() {
   // if we fail, stop everything and panic blink the LED
   if (!LittleFS.begin()) makeError("Couldn't mount FS");
 
+  if (LittleFS.exists("/data-to")) {
+    startedTakingData = millis();
+    takingData = true;
+    File namefile = LittleFS.open("/data-to", "r");
+    savefile = LittleFS.open(namefile.readStringUntil('\n'), "a");
+    namefile.close();
+  } else {
+    takingData = false;
+  }
+
   server.begin();
 
   // let power stabilize, then enable DHT
@@ -129,11 +139,15 @@ void loop() {
         if (fname.length()) {
           savefile = LittleFS.open(DATA_DIR + fname, "w");
           takingData = true;
+          File namefile = LittleFS.open("/data-to", "w");
+          namefile.printf("%s%s\n", DATA_DIR, fname);
+          namefile.close();
         }
       }
     } else if (order == 'S' && takingData) {  // Stop taking data
       savefile.close();
       takingData = false;
+      LittleFS.remove("/data-to");
     } else if (order == 'P') {  // Print data
       Dir dataDir = LittleFS.openDir(DATA_DIR);
       while (dataDir.next()) {
@@ -146,9 +160,9 @@ void loop() {
             readfile.readBytes((char*)&loadObs, sizeof(loadObs));
             printObservation(loadObs);
           }
-        }
 
-        client.println();
+          client.println();
+        }
       }
       client.println();
     } else if (order == 'F' && !takingData) {  // Format flash memory
