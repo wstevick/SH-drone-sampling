@@ -1,10 +1,12 @@
 import tkinter as tk
+import functools
 import atexit
 import threading
 import socket
 import tkinter.font as tkfont
 from tkinter.simpledialog import askstring
 from tkinter.filedialog import askdirectory
+import time
 import os
 from tkinter.messagebox import askyesno, showinfo
 
@@ -13,6 +15,23 @@ import parse_arduino_data
 HOST = "192.168.4.1"
 PORT = 123
 TIMEOUT = 3
+
+indent = 0
+
+
+def logme(func):
+    @functools.wraps(func)
+    def wrapped(self, *args, **kwargs):
+        global indent
+        print("    " * indent, func.__name__, self.socket)
+        indent += 1
+        try:
+            res = func(self, *args, **kwargs)
+        finally:
+            indent -= 1
+        return res
+
+    return wrapped
 
 
 class NoConnection(Exception):
@@ -51,29 +70,32 @@ class ControlGUI:
         self.display.pack(padx=10, pady=10, fill=tk.BOTH)
 
         self.socket = None
-        self.connect_to_arduino()
+        threading.Thread(
+            target=self.maintain_connection_loop, daemon=True
+        ).start()
 
         self.update_status_loop()
 
-    def connect_to_arduino(self):
-        # real work happens in another thread, to avoid blocking mainloop
-        threading.Thread(target=self._connect_to_arduiono, daemon=True).start()
-
-    def _connect_to_arduiono(self):
-        """Form a socket connection with the arduino"""
+    def maintain_connection_loop(self):
+        """Try to re-connect if we loose connection to the Arduino"""
         while True:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((HOST, PORT))
-                break
-            except OSError:
+            if self.socket is not None:
+                time.sleep(0.01)
                 continue
-        s.settimeout(TIMEOUT)
-        # all the work done on a seperate variable that's then moved to self.socket
-        # that way, the main thread won't try to do anything to it while we're still getting it ready
-        self.socket = s
-        atexit.register(s.close)
-        self.update_status()
+
+            print("getting connection")
+            while True:
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((HOST, PORT))
+                    break
+                except OSError:
+                    continue
+            print("have connection")
+
+            s.settimeout(TIMEOUT)
+            atexit.register(s.close)
+            self.socket = s
 
     def update_status_loop(self):
         """Update the status twice a second"""
@@ -81,6 +103,7 @@ class ControlGUI:
         self.master.after(500, self.update_status_loop)
         self.update_status()
 
+    @logme
     def update_status(self):
         try:
             # ask for an update
@@ -152,6 +175,7 @@ class ControlGUI:
             lines.append(f"{corrupted_files} file(s) corrupted")
         self.display.config(text="\n".join(lines))
 
+    @logme
     def getline(self):
         """Get one line from the arduino"""
         if self.socket is None:
@@ -177,11 +201,13 @@ class ControlGUI:
                         continue
                     line.extend(char)
         except OSError:
+            print("disconnect while getline", self.socket)
             self.handle_disconnect()
             raise NoConnection
 
         return line.decode()
 
+    @logme
     def send(self, message):
         """Send a message to the arduino"""
         if self.socket is None:
@@ -194,9 +220,11 @@ class ControlGUI:
             sent = -1
 
         if sent != len(message_bytes):
+            print("disconnect while send", self.socket)
             self.handle_disconnect()
             raise NoConnection
 
+    @logme
     def handle_disconnect(self):
         """Disable all buttons, clear the display, and try to reconnect to the arduino"""
         for btn in self.buttons.values():
@@ -206,8 +234,7 @@ class ControlGUI:
         self.socket.close()
         self.socket = None
 
-        self.connect_to_arduino()
-
+    @logme
     def toggle(self):
         try:
             if self.taking_data:
@@ -221,6 +248,7 @@ class ControlGUI:
         except NoConnection:
             pass
 
+    @logme
     def format(self):
         if askyesno("Format?", "Are you sure you want to format everything?"):
             try:
@@ -228,6 +256,7 @@ class ControlGUI:
             except NoConnection:
                 pass
 
+    @logme
     def download(self):
         save_dir = askdirectory()
         if save_dir:
