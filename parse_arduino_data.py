@@ -29,7 +29,7 @@ def parse_arduino_dataline(line):
             satellites,
         ] = line.split(",")
     except:
-        print('error parsing', line)
+        print("error parsing", line)
         raise
     boardtime = int(boardtime)
     temp = float(temp)

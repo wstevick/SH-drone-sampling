@@ -23,7 +23,11 @@ def logme(func):
     @functools.wraps(func)
     def wrapped(self, *args, **kwargs):
         global indent
-        print("    " * indent, func.__name__, 'has socket' if self.socket else 'None')
+        print(
+            "    " * indent,
+            func.__name__,
+            "has socket" if self.socket else "None",
+        )
         indent += 1
         try:
             res = func(self, *args, **kwargs)
@@ -184,22 +188,15 @@ class ControlGUI:
         line = bytearray()
 
         try:
-            with open(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)), "log"
-                ),
-                "ab",
-            ) as f:
-                while True:
-                    char = self.socket.recv(1)
-                    f.write(char)
-                    if char == b"":
-                        raise TimeoutError
-                    if char == b"\n":
-                        break
-                    if char == b"\r":
-                        continue
-                    line.extend(char)
+            while True:
+                char = self.socket.recv(1)
+                if char == b"":
+                    raise TimeoutError
+                if char == b"\n":
+                    break
+                if char == b"\r":
+                    continue
+                line.extend(char)
         except OSError:
             print("disconnect while getline", self.socket)
             self.handle_disconnect()
@@ -260,6 +257,13 @@ class ControlGUI:
     def download(self):
         save_dir = askdirectory()
         if save_dir:
+            if os.path.exists(save_dir):
+                if not os.path.isdir(save_dir):
+                    showinfo(message="That's not a directory!")
+                    return
+            else:
+                os.path.mkdirs(save_dir)
+
             self.send("P")
             saved_files = parse_arduino_data.save_data_to(
                 save_dir, self.getline
