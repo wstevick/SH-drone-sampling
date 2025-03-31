@@ -8,7 +8,7 @@
 bool lastState;
 void setState(bool state) {
   if (state != lastState)
-    digitalWrite(LEDPIN, state ? HIGH : LOW);
+    digitalWrite(LEDPIN, state ? LOW : HIGH);
   lastState = state;
 }
 
@@ -140,7 +140,7 @@ void loop() {
           savefile = LittleFS.open(DATA_DIR + fname, "w");
           takingData = true;
           File namefile = LittleFS.open("/data-to", "w");
-          namefile.printf("%s%s\n", DATA_DIR, fname);
+          namefile.printf("%s%S\n", DATA_DIR, fname.c_str());
           namefile.close();
         }
       }

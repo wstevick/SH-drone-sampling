@@ -19,18 +19,19 @@ def getline(s):
             continue
         line.extend(char)
 
+    print(line)
     return line.decode()
 
 
 def main():
-    print("getting connection...", end="")
+    print("getting connection...", end="", flush=True)
     while True:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((HOST, PORT))
+            s.connect(("192.168.4.1", 123))
             break
         except OSError:
-            print(".", end="")
+            print(".", end="", flush=True)
             continue
 
     print("conntected!")
@@ -43,8 +44,12 @@ def main():
             print("That's a file!")
             return
     else:
-        os.path.mkdirs(save_dir)
+        os.makedirs(save_dir)
 
     s.sendall(b"P")
     saved_files = save_data_to(save_dir, functools.partial(getline, s))
     print(saved_files, "downloaded")
+
+
+if __name__ == "__main__":
+    main()
