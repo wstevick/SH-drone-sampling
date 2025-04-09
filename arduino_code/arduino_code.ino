@@ -78,7 +78,7 @@ void setup() {
 
   // try to start the WiFi access point
   // if we fail, stop everything and panic blink the LED
-  if (!WiFi.softAP("Sampling WiFi", "very secret")) makeError("Couldn't start WiFi");
+  if (!WiFi.softAP("%%%%%WIFI NAME HERE MAKE IT DIFFERENT%%%%%%", "very secret")) makeError("Couldn't start WiFi");
 
   // try to mount the flash filesystem
   // if we fail, stop everything and panic blink the LED
@@ -140,7 +140,7 @@ void loop() {
           savefile = LittleFS.open(DATA_DIR + fname, "w");
           takingData = true;
           File namefile = LittleFS.open("/data-to", "w");
-          namefile.printf("%s%S\n", DATA_DIR, fname.c_str());
+          namefile.printf("%s%s\n", DATA_DIR, fname.c_str());
           namefile.close();
         }
       }
@@ -226,7 +226,7 @@ void loop() {
 
 // send an Observation to the client, as CSV
 void printObservation(struct Observation obs) {
-  client.printf("%d,%f,%f,%d:%d:%d (GMT),%f%c,%f%c,%f,%d,%d\n",
+  client.printf("%d,%f,%f,%d:%d:%d,%f%c,%f%c,%f,%d,%d\n",
                 obs.sinceStart,
                 obs.temp, obs.humidity,
                 obs.hour, obs.minute, obs.seconds,

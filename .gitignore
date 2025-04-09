@@ -173,3 +173,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 log
+04-03:1:above.csv 04-03:1:below.csv 04-03:2:above.csv 04-03:2:below.csv 04-03:3:above.csv 04-03:3:below.csv 04-04.ground.csv 04-04:1:above.csv 04-04:1:below.csv 04-04:2:above.csv 04-04:2:below.csv 04-04:3:above.csv 04-04:3:below.csv Ground Data - April 4.csv fielddata.csv save-25-03-14.csv save-25-03-15.csv save-25-03-16-am.csv
