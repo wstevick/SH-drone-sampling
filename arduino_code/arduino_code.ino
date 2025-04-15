@@ -78,7 +78,7 @@ void setup() {
 
   // try to start the WiFi access point
   // if we fail, stop everything and panic blink the LED
-  if (!WiFi.softAP("%%%%%WIFI NAME HERE MAKE IT DIFFERENT%%%%%%", "very secret")) makeError("Couldn't start WiFi");
+  if (!WiFi.softAP("MATH I", "very secret")) makeError("Couldn't start WiFi");
 
   // try to mount the flash filesystem
   // if we fail, stop everything and panic blink the LED
@@ -118,10 +118,10 @@ void setup() {
 
 void loop() {
   // try to get a WiFi client if we don't have one
-  hasClient = client && client.connected();
+  hasClient = client && client.connected() && WiFi.softAPgetStationNum();
   if (!hasClient) {
     client = server.accept();
-    hasClient = client && client.connected();
+    hasClient = client && client.connected() && WiFi.softAPgetStationNum();
   }
 
   // take orders from the client
