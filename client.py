@@ -165,8 +165,8 @@ class ControlGUI:
             "Taking Data" if self.taking_data else "Not Taking Data",
             "",
             timestamp,
-            f"{temp}C at {humidity}% humidity",
-            f"Location {lat},{lon}, altitude {altitude}",
+            f"{temp:.01f}C at {humidity:.01f}% humidity",
+            f"Location {lat:.04f},{lon:.04f}, altitude {altitude:.02f}",
             f"Fix type: {fixtype} ({satellites} satellites)",
         ]
         if savedfiles:
