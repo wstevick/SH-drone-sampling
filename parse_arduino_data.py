@@ -37,8 +37,11 @@ def parse_arduino_dataline(line):
     lat = parse_adafruit_latlon(lat)
     lon = parse_adafruit_latlon(lon)
     altitude = float(altitude)
-    fixtype = ["No Fix", "GPS", "DGPS"][int(fixtype)]
-    satellites = int(satellites)
+    try:
+        fixtype = ["No Fix", "GPS", "DGPS"][int(fixtype)]
+    except IndexError:
+        pass
+    satellite = int(satellites)
     return [
         boardtime,
         temp,
