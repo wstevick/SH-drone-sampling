@@ -25,10 +25,15 @@ def ground_data(transect, date):
     # Rename stuff
     ground["soil_temperature"] = ground["soil temperature"]
     del ground["soil temperature"]
-    print(transect, date)
     ground["soil_moisture"] = ground["soil moisture"].apply(
-        lambda m: "DNW".index(m[0]) * 3
-        + (1 if m[-1] in "-_" else (2 if m[-1] != "+" else 3))
+        lambda m: (
+            float("nan")
+            if pd.isnull(m)
+            else (
+                "DNW".index(m[0]) * 3
+                + (1 if m[-1] in "-_" else (2 if m[-1] != "+" else 3))
+            )
+        )
     )
     del ground["soil moisture"]
 
