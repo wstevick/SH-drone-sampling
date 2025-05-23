@@ -34,7 +34,7 @@ void loop()  // run over and over again
   WiFiClient client = server.accept();
   if (client && client.connected()) {
     File savefile = LittleFS.open("/log", "r");
-    while (savefile.available()) client.print(savefile.read());
+    while (savefile.available()) client.write(savefile.read());
     savefile.close();
     client.stop();
   }
