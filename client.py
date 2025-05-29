@@ -126,6 +126,7 @@ class ControlGUI:
                     altitude,
                     fixtype,
                     satellites,
+                    hdop,
                 ],
                 savedfiles,
             ) = parse_arduino_data.parseupdate(self.getline)
@@ -155,7 +156,7 @@ class ControlGUI:
         # 8:06:55 EST
         # 23C at 28% humidity
         # Location 130,800, altitude 138.3
-        # Fix type: GPS (8 satellites)
+        # Fix type: GPS (8 satellites, HDOP 5.0)
         #
         # Saved files:
         # save-2025-03-09 - 3 minutes, 4 seconds of data
@@ -167,7 +168,7 @@ class ControlGUI:
             timestamp,
             f"{temp:.01f}C at {humidity:.01f}% humidity",
             f"Location {lat:.04f},{lon:.04f}, altitude {altitude:.02f}",
-            f"Fix type: {fixtype} ({satellites} satellites)",
+            f"Fix type: {fixtype} ({satellites} satellites, HDOP {hdop:.1f})",
         ]
         if savedfiles:
             lines.extend(["", "Saved files:"])

@@ -3,6 +3,8 @@
 #include <ESP8266WiFi.h>
 #include <Adafruit_GPS.h>
 
+//#define KEEP_TAKING_DATA_AFTER_POWER_FAILIURE
+
 // setup for the LED
 #define LEDPIN 16  // builtin led/D0
 bool lastState;
@@ -56,6 +58,7 @@ struct Observation {
   // GPS diagnostic data;
   uint8_t fixquality;   // 0 = no fix, 1 = GPS, 2 = DGPS
   uint8_t nsatellites;  // number of satellites
+  nmea_float_t HDOP;    // Horizontal Dilution of Precision
 };
 struct Observation latestObs;
 
@@ -73,17 +76,18 @@ void makeError(String message) {
 void setup() {
   // configure the pin for the LED we use to communicate to the user
   pinMode(LEDPIN, OUTPUT);
-  lastState = true;
+  lastState = true; 
   setState(false);
 
   // try to start the WiFi access point
   // if we fail, stop everything and panic blink the LED
-  if (!WiFi.softAP("MATH I", "very secret")) makeError("Couldn't start WiFi");
+  if (!WiFi.softAP("MATH II", "very secret")) makeError("Couldn't start WiFi");
 
   // try to mount the flash filesystem
   // if we fail, stop everything and panic blink the LED
   if (!LittleFS.begin()) makeError("Couldn't mount FS");
 
+#ifdef KEEP_TAKING_DATA_AFTER_POWER_FAILIURE
   if (LittleFS.exists("/data-to")) {
     startedTakingData = millis();
     takingData = true;
@@ -93,6 +97,7 @@ void setup() {
   } else {
     takingData = false;
   }
+#endif
 
   server.begin();
 
@@ -139,15 +144,19 @@ void loop() {
         if (fname.length()) {
           savefile = LittleFS.open(DATA_DIR + fname, "w");
           takingData = true;
+#ifdef KEEP_TAKING_DATA_AFTER_POWER_FAILIURE
           File namefile = LittleFS.open("/data-to", "w");
           namefile.printf("%s%s\n", DATA_DIR, fname.c_str());
           namefile.close();
+#endif
         }
       }
     } else if (order == 'S' && takingData) {  // Stop taking data
       savefile.close();
       takingData = false;
+#ifdef KEEP_TAKING_DATA_AFTER_POWER_FAILIURE
       LittleFS.remove("/data-to");
+#endif
     } else if (order == 'P') {  // Print data
       Dir dataDir = LittleFS.openDir(DATA_DIR);
       while (dataDir.next()) {
@@ -188,6 +197,7 @@ void loop() {
 
       latestObs.fixquality = GPS.fixquality;
       latestObs.nsatellites = GPS.satellites;
+      latestObs.HDOP = GPS.HDOP;
     }
   }
 
@@ -226,12 +236,12 @@ void loop() {
 
 // send an Observation to the client, as CSV
 void printObservation(struct Observation obs) {
-  client.printf("%d,%f,%f,%d:%d:%d,%f%c,%f%c,%f,%d,%d\n",
+  client.printf("%d,%f,%f,%d:%d:%d,%f%c,%f%c,%f,%d,%d,%f\n",
                 obs.sinceStart,
                 obs.temp, obs.humidity,
                 obs.hour, obs.minute, obs.seconds,
                 obs.latitude, obs.lat, obs.longitude, obs.lon, obs.altitude,
-                obs.fixquality, obs.nsatellites);
+                obs.fixquality, obs.nsatellites, obs.HDOP);
 }
 
 // send the current sensor readings, the amount of data saved, the files, and the board status

@@ -27,6 +27,7 @@ def parse_arduino_dataline(line):
             altitude,
             fixtype,
             satellites,
+            hdop
         ] = line.split(",")
     except:
         print("error parsing", line)
@@ -42,6 +43,7 @@ def parse_arduino_dataline(line):
     except IndexError:
         pass
     satellite = int(satellites)
+    hdop = float(hdop)
     return [
         boardtime,
         temp,
@@ -52,6 +54,7 @@ def parse_arduino_dataline(line):
         altitude,
         fixtype,
         satellites,
+        hdop,
     ]
 
 
@@ -77,7 +80,7 @@ def save_data_to(where, getline):
         saved_files += 1
         with open(os.path.join(where, fname), "w", newline="") as f:
             f.write(
-                "boardtime,temp,humidity,timestamp,lat,lon,altitude,fixtype,satellites\n"
+                "boardtime,temp,humidity,timestamp,lat,lon,altitude,fixtype,satellites,hdop\n"
             )
             writer = csv.writer(f)
             while True:
